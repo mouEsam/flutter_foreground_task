@@ -1,11 +1,13 @@
 package com.pravera.flutter_foreground_task
 
+import android.os.Process
 import android.util.Log
 import com.pravera.flutter_foreground_task.service.ForegroundServiceManager
 import com.pravera.flutter_foreground_task.service.ServiceProvider
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import kotlin.system.exitProcess
 
 /** FlutterForegroundTaskPlugin */
 class FlutterForegroundTaskPlugin : FlutterPlugin, ActivityAware, ServiceProvider {
@@ -42,7 +44,6 @@ class FlutterForegroundTaskPlugin : FlutterPlugin, ActivityAware, ServiceProvide
     }
 
     private fun attachedToActivity(binding: ActivityPluginBinding, configChanges: Boolean) {
-        Log.d(TAG, "onAttachedToActivity")
         methodCallHandler.setActivity(binding.activity)
         binding.addActivityResultListener(methodCallHandler)
         activityBinding = binding

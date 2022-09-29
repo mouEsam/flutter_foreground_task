@@ -105,19 +105,16 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
     }
 
     private fun start() {
-        fetchDataFromPreferences()
         startForegroundService()
         executeDartCallback(foregroundTaskOptions.callbackHandle)
     }
 
     private fun reboot() {
-        fetchDataFromPreferences()
         startForegroundService()
         executeDartCallback(foregroundTaskOptions.callbackHandleOnBoot)
     }
 
     private fun stop() {
-        fetchDataFromPreferences()
         stopForegroundService()
     }
 
@@ -563,17 +560,26 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
     inner class ForegroundBinder: Binder() {
         fun update() {
             Log.d(TAG, "update")
-            this@ForegroundService.start()
+            this@ForegroundService.apply {
+                fetchDataFromPreferences()
+                start()
+            }
         }
 
         fun restart() {
             Log.d(TAG, "restart")
-            this@ForegroundService.reboot()
+            this@ForegroundService.apply {
+                fetchDataFromPreferences()
+                reboot()
+            }
         }
 
         fun stop() {
             Log.d(TAG, "stop")
-            this@ForegroundService.stop()
+            this@ForegroundService.apply {
+                fetchDataFromPreferences()
+                stop()
+            }
         }
     }
 }
