@@ -28,14 +28,15 @@ class MethodCallHandlerImpl(private val context: Context, private val provider: 
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         val args = call.arguments
+        val mapArgs = args as? Map<*, *>
 
         when (call.method) {
             "startService" ->
-                result.success(provider.getForegroundServiceManager().start(context, args))
+                result.success(provider.getForegroundServiceManager().start(context, mapArgs))
             "restartService" ->
-                result.success(provider.getForegroundServiceManager().restart(context, args))
+                result.success(provider.getForegroundServiceManager().restart(context))
             "updateService" ->
-                result.success(provider.getForegroundServiceManager().update(context, args))
+                result.success(provider.getForegroundServiceManager().update(context, mapArgs))
             "stopService" ->
                 result.success(provider.getForegroundServiceManager().stop(context))
             "isRunningService" ->

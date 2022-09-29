@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.net.wifi.WifiManager
+import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
@@ -21,13 +22,11 @@ import com.pravera.flutter_foreground_task.utils.ForegroundServiceUtils
 import io.flutter.FlutterInjector
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.engine.dart.DartExecutor
-import io.flutter.embedding.engine.loader.FlutterLoader
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.FlutterCallbackInformation
 import kotlinx.coroutines.*
 import java.util.*
-import kotlin.system.exitProcess
 
 /**
  * A service class for implementing foreground service.
@@ -61,6 +60,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
     private var flutterEngine: FlutterEngine? = null
     private var backgroundChannel: MethodChannel? = null
     private var backgroundJob: Job? = null
+    private var coroutineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // A broadcast receiver that handles intents that occur within the foreground service.
     private var broadcastReceiver = object : BroadcastReceiver() {
@@ -81,14 +81,8 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
         registerBroadcastReceiver()
 
         when (foregroundServiceStatus.action) {
-            ForegroundServiceAction.START -> {
-                startForegroundService()
-                executeDartCallback(foregroundTaskOptions.callbackHandle)
-            }
-            ForegroundServiceAction.REBOOT -> {
-                startForegroundService()
-                executeDartCallback(foregroundTaskOptions.callbackHandleOnBoot)
-            }
+            ForegroundServiceAction.START -> start()
+            ForegroundServiceAction.REBOOT -> reboot()
         }
     }
 
@@ -96,34 +90,47 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
         fetchDataFromPreferences()
 
         when (foregroundServiceStatus.action) {
-            ForegroundServiceAction.UPDATE -> {
-                startForegroundService()
-                executeDartCallback(foregroundTaskOptions.callbackHandle)
-            }
-            ForegroundServiceAction.RESTART -> {
-                startForegroundService()
-                executeDartCallback(foregroundTaskOptions.callbackHandleOnBoot)
-            }
+            ForegroundServiceAction.UPDATE -> start()
+            ForegroundServiceAction.RESTART -> reboot()
             ForegroundServiceAction.STOP -> {
-                stopForegroundService()
+                stop()
                 return START_NOT_STICKY
             }
         }
         return if (notificationOptions.isSticky) START_STICKY else START_NOT_STICKY
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
+    override fun onBind(intent: Intent?): IBinder {
+        return ForegroundBinder()
+    }
+
+    private fun start() {
+        fetchDataFromPreferences()
+        startForegroundService()
+        executeDartCallback(foregroundTaskOptions.callbackHandle)
+    }
+
+    private fun reboot() {
+        fetchDataFromPreferences()
+        startForegroundService()
+        executeDartCallback(foregroundTaskOptions.callbackHandleOnBoot)
+    }
+
+    private fun stop() {
+        fetchDataFromPreferences()
+        stopForegroundService()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        coroutineScope.cancel()
+
         releaseLockMode()
         destroyBackgroundChannel()
         unregisterBroadcastReceiver()
         if (foregroundServiceStatus.action != ForegroundServiceAction.STOP) {
             if (isSetStopWithTaskFlag()) {
-                exitProcess(0)
+                ExitActivity.exit(this)
             } else {
                 Log.i(TAG, "The foreground service was terminated due to an unexpected problem.")
                 if (notificationOptions.isSticky) {
@@ -381,7 +388,7 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
 
         val callback = object : MethodChannel.Result {
             override fun success(result: Any?) {
-                backgroundJob = CoroutineScope(Dispatchers.Default).launch {
+                backgroundJob = coroutineScope.launch {
                     do {
                         withContext(Dispatchers.Main) {
                             try {
@@ -551,5 +558,22 @@ class ForegroundService : Service(), MethodChannel.MethodCallHandler {
             actions.add(bAction)
         }
         return actions
+    }
+
+    inner class ForegroundBinder: Binder() {
+        fun update() {
+            Log.d(TAG, "update")
+            this@ForegroundService.start()
+        }
+
+        fun restart() {
+            Log.d(TAG, "restart")
+            this@ForegroundService.reboot()
+        }
+
+        fun stop() {
+            Log.d(TAG, "stop")
+            this@ForegroundService.stop()
+        }
     }
 }

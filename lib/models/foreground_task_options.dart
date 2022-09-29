@@ -4,6 +4,7 @@ class ForegroundTaskOptions {
   const ForegroundTaskOptions({
     this.interval = 5000,
     this.isOnceEvent = false,
+    this.isBound = false,
     this.autoRunOnBoot = false,
     this.allowWakeLock = true,
     this.allowWifiLock = false,
@@ -16,6 +17,10 @@ class ForegroundTaskOptions {
   /// Whether to invoke the onEvent of [TaskHandler] only once.
   /// The default is `false`.
   final bool isOnceEvent;
+
+  /// Whether the service is bound to the lifetime of application
+  /// The default is `false`.
+  final bool isBound;
 
   /// Whether to automatically run foreground task on boot.
   /// The default is `false`.
@@ -36,6 +41,7 @@ class ForegroundTaskOptions {
     return {
       'interval': interval,
       'isOnceEvent': isOnceEvent,
+      'isBound': isBound,
       'autoRunOnBoot': autoRunOnBoot,
       'allowWakeLock': allowWakeLock,
       'allowWifiLock': allowWifiLock,

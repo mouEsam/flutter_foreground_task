@@ -13,5 +13,7 @@
             android:name=".service.RestartReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <activity android:name=".service.ExitActivity" />
     </application>
 </manifest>

@@ -33,16 +33,15 @@ class MyTaskHandler extends TaskHandler {
       notificationTitle: 'MyTaskHandler',
       notificationText: 'eventCount: $_eventCount',
     );
-
     // Send data to the main isolate.
     sendPort?.send(_eventCount);
-
     _eventCount++;
   }
 
   @override
   Future<void> onClose(DateTime timestamp, SendPort? sendPort) async {
     print('CLOSED');
+    // await FlutterForegroundTask.stopService();
   }
 
   @override
@@ -106,6 +105,7 @@ class _ExamplePageState extends State<ExamplePage> {
             'This notification appears when the foreground service is running.',
         channelImportance: NotificationChannelImportance.LOW,
         priority: NotificationPriority.LOW,
+        isSticky: false,
         iconData: const NotificationIconData(
           resType: ResourceType.mipmap,
           resPrefix: ResourcePrefix.ic,
@@ -132,6 +132,7 @@ class _ExamplePageState extends State<ExamplePage> {
       foregroundTaskOptions: const ForegroundTaskOptions(
         interval: 5000,
         isOnceEvent: false,
+        isBound: true,
         autoRunOnBoot: true,
         allowWakeLock: true,
         allowWifiLock: true,
